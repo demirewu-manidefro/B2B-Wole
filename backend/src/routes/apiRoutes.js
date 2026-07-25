@@ -12,6 +12,7 @@ const adminController = require('../controllers/adminController');
 // --- Reference Data Routes (Public / Basic Auth) ---
 router.get('/users', adminController.getUsers);
 router.post('/users', adminController.createUser);
+router.post('/auth/login', adminController.loginUser);
 router.get('/categories', adminController.getCategories);
 router.get('/admin/settings', adminController.getSystemSettings);
 router.get('/admin/stats', auth.authenticate, auth.requireRole('admin'), adminController.getAdminDashboardStats);

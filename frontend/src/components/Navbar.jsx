@@ -121,35 +121,68 @@ export default function Navbar({
 
           {/* Persona Switcher & Action Controls */}
           <div className="header-controls">
-            <div className="persona-selector">
-              <User size={16} className="text-ali-gold" />
-              <select 
-                className="persona-select"
-                value={currentPersona.id}
-                onChange={(e) => onPersonaChange(Number(e.target.value))}
+            {/* AliExpress-style Account Button (Screenshot 2) */}
+            <div className="relative group">
+              <button 
+                onClick={() => onOpenRegister('signin')}
+                className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border-2 border-ali-gold/80 bg-bg-card hover:bg-ali-gold/15 hover:border-ali-gold transition-all text-left shadow-md cursor-pointer group"
               >
-                {allPersonas.length > 0 ? (
-                  allPersonas.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))
-                ) : (
-                  <>
-                    <option value={1}>Abebe Kebede (Buyer 🏢)</option>
-                    <option value={2}>Sara Tadesse (Vendor 👘)</option>
-                    <option value={3}>Dawit Mengistu (Tech Vendor ⚡)</option>
-                    <option value={4}>Platform Arbiter (Admin ⚖️)</option>
-                  </>
-                )}
-              </select>
-              <span className={`role-badge role-${currentPersona.role}`}>
-                {currentPersona.role}
-              </span>
-            </div>
+                <div className="w-8 h-8 rounded-full bg-ali-red/15 flex items-center justify-center text-ali-red border border-ali-red/30 shrink-0">
+                  <User size={18} className="text-ali-red group-hover:scale-110 transition-transform" />
+                </div>
+                <div className="leading-tight">
+                  <div className="text-[11px] text-text-muted font-normal">Welcome</div>
+                  <div className="text-xs font-extrabold text-white group-hover:text-ali-gold transition-colors flex items-center gap-1">
+                    <span>{currentPersona ? currentPersona.name.split(' ')[0] : 'Sign in / Register'}</span>
+                    <span className="text-[10px] text-ali-gold font-mono font-normal">({currentPersona ? currentPersona.role : 'Guest'})</span>
+                  </div>
+                </div>
+              </button>
 
-            <button className="btn btn-secondary btn-sm" onClick={onOpenRegister} title="አዲስ አካውንት ክፈት (Open Account with Name & Phone)">
-              <UserPlus size={16} className="text-ali-gold" />
-              <span className="hidden xl:inline">አካውንት ክፈት</span>
-            </button>
+              {/* Hover Dropdown Menu for AliExpress Auth & Account Switching */}
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-bg-card border border-border-glass shadow-2xl p-4 hidden group-hover:block z-50">
+                <div className="text-xs font-bold text-white mb-1">My B2B Account</div>
+                <div className="text-[11px] text-text-muted mb-3 truncate">
+                  Logged in as: <strong className="text-ali-gold">{currentPersona?.name}</strong>
+                </div>
+
+                <div className="space-y-2">
+                  <button
+                    onClick={() => onOpenRegister('signin')}
+                    className="w-full py-2 px-3 rounded-lg bg-ali-red text-white font-bold text-xs hover:bg-ali-red/90 transition-all text-center block shadow-md"
+                  >
+                    🔑 Sign In / Account Switch
+                  </button>
+                  <button
+                    onClick={() => onOpenRegister('register')}
+                    className="w-full py-2 px-3 rounded-lg border border-ali-gold text-ali-gold font-bold text-xs hover:bg-ali-gold/10 transition-all text-center block"
+                  >
+                    ✨ Register New Account
+                  </button>
+                </div>
+
+                <div className="border-t border-border-glass my-3"></div>
+
+                <div className="text-[10px] font-bold text-text-muted uppercase mb-1">Quick Persona Switch:</div>
+                <select 
+                  className="w-full bg-bg-main border border-border-glass rounded-lg p-1.5 text-xs text-white"
+                  value={currentPersona?.id || 1}
+                  onChange={(e) => onPersonaChange(Number(e.target.value))}
+                >
+                  {allPersonas.length > 0 ? (
+                    allPersonas.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value={1}>Abebe Kebede (Buyer 🏢)</option>
+                      <option value={2}>Sara Tadesse (Vendor 👘)</option>
+                      <option value={3}>System Administrator (Admin ⚖️)</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
 
             {currentPersona.role === 'vendor' && (
               <button className="btn btn-gold btn-sm" onClick={onOpenCreateProduct}>

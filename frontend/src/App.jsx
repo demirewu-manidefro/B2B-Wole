@@ -13,7 +13,7 @@ import EscrowTimelineView from './components/EscrowTimelineView';
 import DisputeModal from './components/DisputeModal';
 import AdminCenterView from './components/AdminCenterView';
 import MaintenanceOverlay from './components/MaintenanceOverlay';
-import RegisterModal from './components/RegisterModal';
+import AuthModal from './components/AuthModal';
 import { api } from './services/api';
 import { socketService } from './services/socket';
 import { AlertCircle, CheckCircle, Info, ShieldCheck, Zap } from 'lucide-react';
@@ -32,7 +32,7 @@ export default function App() {
   const [showCreateRfq, setShowCreateRfq] = useState(false);
   const [showCreatePool, setShowCreatePool] = useState(false);
   const [disputeOrder, setDisputeOrder] = useState(null);
-  const [showRegister, setShowRegister] = useState(false);
+  const [showAuth, setShowAuth] = useState(false); // false, 'signin', or 'register'
   const [allPersonas, setAllPersonas] = useState([]);
 
   // Maintenance & Security state
@@ -153,7 +153,7 @@ export default function App() {
         cartCount={cartCount}
         onOpenAdmin={() => setActiveTab('admin')}
         onOpenCreateProduct={() => setShowCreateProduct(true)}
-        onOpenRegister={() => setShowRegister(true)}
+        onOpenRegister={(tab = 'signin') => setShowAuth(tab)}
       />
 
       {/* Main Content Body */}
@@ -286,9 +286,10 @@ export default function App() {
         />
       )}
 
-      {showRegister && (
-        <RegisterModal 
-          onClose={() => setShowRegister(false)}
+      {showAuth && (
+        <AuthModal 
+          initialTab={typeof showAuth === 'string' ? showAuth : 'signin'}
+          onClose={() => setShowAuth(false)}
           onSuccess={(newUser) => {
             fetchUsersList().then(() => {
               handlePersonaChange(newUser.id);

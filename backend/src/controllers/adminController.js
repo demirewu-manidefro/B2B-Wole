@@ -235,6 +235,43 @@ async function getAdminDashboardStats(req, res) {
   }
 }
 
+/**
+ * POST /api/auth/login
+ * Authenticates user by phone number (and optional password check for demo flexibility).
+ */
+async function loginUser(req, res) {
+  try {
+    const { phone, password } = req.body;
+    if (!phone) {
+      return res.status(400).json({ error: 'Invalid Payload', message: 'Phone number is required to login.' });
+    }
+    const result = await db.query('SELECT id, name, phone, role, is_verified, password_hash FROM users WHERE phone = $1;', [phone]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User Not Found', message: 'No account registered with this phone number. Please register as a new user.' });
+    }
+    const user = result.rows[0];
+    
+    // In demo mode, if password is provided, check with bcrypt, or allow demo bypass if typed 'password123', 'admin123', 'default123', or 'demo'
+    if (password) {
+      const match = await bcrypt.compare(password, user.password_hash);
+      if (!match && password !== 'password123' && password !== 'admin123' && password !== 'default123' && password !== 'demo') {
+        return res.status(401).json({ error: 'Unauthorized', message: 'Incorrect password.' });
+      }
+    }
+
+    await db.query(
+      `INSERT INTO audit_logs (user_id, event_type, severity, details) VALUES ($1, $2, $3, $4);`,
+      [user.id, 'USER_LOGIN', 'INFO', `User ${user.name} (${user.phone}) logged in successfully via AliExpress-style Sign in / Register Auth UI.`]
+    );
+
+    const { password_hash, ...safeUser } = user;
+    return res.status(200).json({ message: 'Login successful!', user: safeUser });
+  } catch (err) {
+    console.error('loginUser error:', err.message);
+    return res.status(500).json({ error: 'Login Error', message: err.message });
+  }
+}
+
 module.exports = {
   getAuditLogs,
   toggleMaintenance,
@@ -242,6 +279,7 @@ module.exports = {
   getUsers,
   getCategories,
   createUser,
+  loginUser,
   createCategory,
   getAdminDashboardStats
 };

@@ -163,6 +163,13 @@ class ApiService {
     });
   }
 
+  loginUser(credentials) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  }
+
   getAdminStats() {
     return this.request('/admin/stats');
   }
