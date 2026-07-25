@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Search, ShieldCheck, User, ShoppingBag, Radio, Sparkles, Filter, Zap } from 'lucide-react';
+import { Search, ShieldCheck, User, ShoppingBag, Radio, Sparkles, Filter, Zap, UserPlus } from 'lucide-react';
 
 export default function Navbar({ 
   currentPersona, 
   onPersonaChange, 
+  allPersonas = [],
   activeTab, 
   onTabChange, 
   onSearchJsonb,
   cartCount,
   onOpenAdmin,
-  onOpenCreateProduct
+  onOpenCreateProduct,
+  onOpenRegister
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -126,15 +128,28 @@ export default function Navbar({
                 value={currentPersona.id}
                 onChange={(e) => onPersonaChange(Number(e.target.value))}
               >
-                <option value={1}>Abebe Kebede (Buyer 🏢)</option>
-                <option value={2}>Sara Tadesse (Vendor 👘)</option>
-                <option value={3}>Dawit Mengistu (Tech Vendor ⚡)</option>
-                <option value={4}>Platform Arbiter (Admin ⚖️)</option>
+                {allPersonas.length > 0 ? (
+                  allPersonas.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value={1}>Abebe Kebede (Buyer 🏢)</option>
+                    <option value={2}>Sara Tadesse (Vendor 👘)</option>
+                    <option value={3}>Dawit Mengistu (Tech Vendor ⚡)</option>
+                    <option value={4}>Platform Arbiter (Admin ⚖️)</option>
+                  </>
+                )}
               </select>
               <span className={`role-badge role-${currentPersona.role}`}>
                 {currentPersona.role}
               </span>
             </div>
+
+            <button className="btn btn-secondary btn-sm" onClick={onOpenRegister} title="አዲስ አካውንት ክፈት (Open Account with Name & Phone)">
+              <UserPlus size={16} className="text-ali-gold" />
+              <span className="hidden xl:inline">አካውንት ክፈት</span>
+            </button>
 
             {currentPersona.role === 'vendor' && (
               <button className="btn btn-gold btn-sm" onClick={onOpenCreateProduct}>

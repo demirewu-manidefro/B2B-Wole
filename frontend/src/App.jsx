@@ -13,6 +13,7 @@ import EscrowTimelineView from './components/EscrowTimelineView';
 import DisputeModal from './components/DisputeModal';
 import AdminCenterView from './components/AdminCenterView';
 import MaintenanceOverlay from './components/MaintenanceOverlay';
+import RegisterModal from './components/RegisterModal';
 import { api } from './services/api';
 import { socketService } from './services/socket';
 import { AlertCircle, CheckCircle, Info, ShieldCheck, Zap } from 'lucide-react';
@@ -31,6 +32,8 @@ export default function App() {
   const [showCreateRfq, setShowCreateRfq] = useState(false);
   const [showCreatePool, setShowCreatePool] = useState(false);
   const [disputeOrder, setDisputeOrder] = useState(null);
+  const [showRegister, setShowRegister] = useState(false);
+  const [allPersonas, setAllPersonas] = useState([]);
 
   // Maintenance & Security state
   const [maintenance, setMaintenance] = useState({ enabled: false, reason: '' });
@@ -51,8 +54,25 @@ export default function App() {
     }, 6000);
   };
 
+  const fetchUsersList = async () => {
+    try {
+      const res = await api.request('/users');
+      if (res && res.users) {
+        const formatted = res.users.map(u => ({
+          id: u.id,
+          role: u.role,
+          name: `${u.name} (${u.role === 'vendor' ? 'Vendor 🏪' : u.role === 'admin' ? 'Admin ⚖️' : 'Buyer 🛒'})`
+        }));
+        setAllPersonas(formatted);
+      }
+    } catch (e) {
+      console.warn('Failed to load users list:', e.message);
+    }
+  };
+
   const handlePersonaChange = (newId) => {
-    const persona = personasMap[newId] || personasMap[1];
+    const found = allPersonas.find(p => p.id === newId);
+    const persona = found || personasMap[newId] || personasMap[1];
     setCurrentPersona(persona);
     api.setUserId(newId);
     socketService.connect(newId);
@@ -96,6 +116,7 @@ export default function App() {
     api.setUserId(currentPersona.id);
     socketService.connect(currentPersona.id);
     fetchProducts();
+    fetchUsersList();
     api.getMaintenanceStatus().then(res => setMaintenance(res)).catch(() => {});
   }, []);
 
@@ -123,14 +144,16 @@ export default function App() {
 
       {/* Navigation Header */}
       <Navbar 
-        currentPersona={currentPersona}
+        currentPersona={currentPersona} 
         onPersonaChange={handlePersonaChange}
-        activeTab={activeTab}
-        onTabChange={(tab) => { setActiveTab(tab); if (tab === 'catalog') fetchProducts(); }}
+        allPersonas={allPersonas}
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
         onSearchJsonb={handleSearchJsonb}
         cartCount={cartCount}
         onOpenAdmin={() => setActiveTab('admin')}
         onOpenCreateProduct={() => setShowCreateProduct(true)}
+        onOpenRegister={() => setShowRegister(true)}
       />
 
       {/* Main Content Body */}
@@ -259,6 +282,18 @@ export default function App() {
           order={disputeOrder} 
           onClose={() => setDisputeOrder(null)}
           onSuccess={() => setActiveTab('orders')}
+          showToast={showToast}
+        />
+      )}
+
+      {showRegister && (
+        <RegisterModal 
+          onClose={() => setShowRegister(false)}
+          onSuccess={(newUser) => {
+            fetchUsersList().then(() => {
+              handlePersonaChange(newUser.id);
+            });
+          }}
           showToast={showToast}
         />
       )}
