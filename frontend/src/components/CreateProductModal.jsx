@@ -9,7 +9,8 @@ export default function CreateProductModal({ onClose, onSuccess, showToast }) {
     base_price: '',
     moq: '10',
     description: '',
-    media_urls: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
+    image_url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&w=600&q=80',
+    video_url: 'https://ebzsmbwwxayngkwwldqf.supabase.co/storage/v1/object/public/videos/habesha-promo-30s.mp4',
     variants: [{ sku: 'NEW-SKU-001', stock_quantity: 100, attributes: { size: '32', color: 'Gold' } }],
     wholesale_prices: [
       { min: 10, max: 49, price: '' },
@@ -20,6 +21,12 @@ export default function CreateProductModal({ onClose, onSuccess, showToast }) {
   const [loading, setLoading] = useState(false);
 
   const categories = ['Apparel/Boutiques', 'Electronics', 'FMCG', 'Hotel Room/Dorm Bookings'];
+  const categoryMap = {
+    'Apparel/Boutiques': 1,
+    'Electronics': 4,
+    'FMCG': 7,
+    'Hotel Room/Dorm Bookings': 9
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,9 +34,14 @@ export default function CreateProductModal({ onClose, onSuccess, showToast }) {
     try {
       const payload = {
         ...formData,
+        category_id: categoryMap[formData.category] || 1,
         base_price: Number(formData.base_price),
         moq: Number(formData.moq),
-        media_urls: [formData.media_urls],
+        video_url: formData.video_url,
+        variants: formData.variants.map(v => ({
+          ...v,
+          image_url: formData.image_url
+        })),
         wholesale_prices: formData.wholesale_prices.filter(p => p.price !== '').map(p => ({
           min: Number(p.min),
           max: Number(p.max),
@@ -38,7 +50,7 @@ export default function CreateProductModal({ onClose, onSuccess, showToast }) {
       };
 
       const res = await api.createProduct(payload);
-      showToast('🎉 New B2B SKU successfully published to the marketplace catalog!', 'success');
+      showToast('🎉 New B2B SKU (with Photo & 30s Video) successfully published to the marketplace catalog!', 'success');
       onSuccess(res.product);
       onClose();
     } catch (err) {
@@ -118,14 +130,28 @@ export default function CreateProductModal({ onClose, onSuccess, showToast }) {
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Media URL Pointer (Section 4 Cloud Storage)</label>
-            <input 
-              type="url" 
-              className="form-input" 
-              value={formData.media_urls} 
-              onChange={(e) => setFormData({ ...formData, media_urls: e.target.value })}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">Product Photo URL (የምርት ፎቶ) *</label>
+              <input 
+                type="url" 
+                required
+                className="form-input text-xs" 
+                placeholder="https://images.unsplash.com/..."
+                value={formData.image_url} 
+                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">30-Second Short Video URL (የ30 ሰከንድ ቪዲዮ)</label>
+              <input 
+                type="url" 
+                className="form-input text-xs" 
+                placeholder="https://.../habesha-promo-30s.mp4"
+                value={formData.video_url} 
+                onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="bg-bg-main p-4 rounded-xl border border-border-glass mb-6">
