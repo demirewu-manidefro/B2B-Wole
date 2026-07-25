@@ -1,0 +1,810 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Clean E-Commerce White & Light Gray Palette */
+  --bg-main: #f4f6f8;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.95);
+  --border-glass: #e5e7eb;
+  --border-glow: rgba(255, 71, 71, 0.3);
+
+  --text-main: #111827;
+  --text-muted: #4b5563;
+  --text-dark: #111827;
+
+  /* AliExpress Signature Red & Gold */
+  --ali-red: #FF4747;
+  --ali-red-hover: #e03535;
+  --ali-red-gradient: linear-gradient(135deg, #ff5c5c, #FF4747, #d92626);
+  --ali-gold: #FF9900;
+  --ali-gold-hover: #e08600;
+  --ali-gold-gradient: linear-gradient(135deg, #ffb340, #FF9900, #d97706);
+
+  --accent-emerald: #10b981;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-rose: #f43f5e;
+
+  --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-code: 'JetBrains Mono', monospace;
+
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-glow-red: 0 4px 15px rgba(255, 71, 71, 0.15);
+  --shadow-glow-gold: 0 4px 15px rgba(255, 153, 0, 0.15);
+  --shadow-glow-emerald: 0 4px 15px rgba(16, 185, 129, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Override utility classes in clean white theme */
+.text-white { color: var(--text-main) !important; }
+.bg-bg-main { background-color: var(--bg-main) !important; }
+.bg-bg-secondary { background-color: var(--bg-secondary) !important; }
+.bg-bg-card { background-color: var(--bg-card) !important; }
+.border-border-glass { border-color: var(--border-glass) !important; }
+
+/* --- Typography & Gradients --- */
+h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -0.02em; color: var(--text-main); }
+.gradient-text-red { background: var(--ali-red-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.gradient-text-gold { background: var(--ali-gold-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.gradient-text-emerald { background: linear-gradient(135deg, #10b981, #059669); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+/* --- Top Announcement Bar --- */
+.top-announcement {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-glass);
+  padding: 0.45rem 2rem;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-muted);
+}
+.top-announcement-links { display: flex; gap: 1.5rem; align-items: center; font-weight: 500; }
+.top-badge-guarantee {
+  color: var(--ali-red);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* --- AliExpress Mega Header --- */
+.mega-header {
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-glass);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 1rem 2rem;
+}
+.mega-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  max-width: 1450px;
+  margin: 0 auto;
+}
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.04em;
+}
+.ali-badge {
+  background: var(--ali-red-gradient);
+  color: #fff !important;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 6px rgba(255, 71, 71, 0.3);
+}
+
+/* --- Mega Search Bar with Category Select --- */
+.search-container {
+  flex: 1;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.search-box-wrapper {
+  display: flex;
+  border: 2px solid var(--ali-red);
+  border-radius: 999px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: var(--shadow-glow-red);
+}
+.search-category-select {
+  background: #f8fafc;
+  color: var(--text-main);
+  border: none;
+  border-right: 1px solid var(--border-glass);
+  padding: 0.65rem 1rem;
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+.search-category-select option { background: #ffffff; color: var(--text-main); }
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 0.65rem 1.25rem;
+  font-family: var(--font-main);
+  font-size: 0.95rem;
+  outline: none;
+}
+.search-input::placeholder { color: #9ca3af; }
+.search-btn {
+  background: var(--ali-red-gradient);
+  color: #fff !important;
+  border: none;
+  padding: 0 1.75rem;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.search-btn:hover { opacity: 0.9; }
+
+/* JSONB Containment Filter Shortcuts Bar */
+.jsonb-shortcuts-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-left: 0.75rem;
+  flex-wrap: wrap;
+}
+.jsonb-chip {
+  background: #fff8f0;
+  color: #d97706;
+  border: 1px solid #fde68a;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.jsonb-chip:hover, .jsonb-chip.active {
+  background: var(--ali-gold);
+  color: #fff !important;
+  border-color: var(--ali-gold);
+}
+
+/* --- Header Controls (Persona, Cart, Admin) --- */
+.header-controls { display: flex; align-items: center; gap: 1.25rem; }
+.persona-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid var(--border-glass);
+  padding: 0.4rem 0.85rem;
+  border-radius: 12px;
+}
+.persona-select {
+  background: transparent;
+  color: #d97706;
+  border: none;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  outline: none;
+}
+.persona-select option { background: #ffffff; color: var(--text-main); }
+.role-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.role-buyer { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.role-vendor { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.role-admin { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* --- Category Navigation Bar --- */
+.category-nav {
+  display: flex;
+  gap: 0.75rem;
+  max-width: 1450px;
+  margin: 0.75rem auto 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-glass);
+  overflow-x: auto;
+}
+.cat-tab-btn {
+  background: #f3f4f6;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+.cat-tab-btn:hover { color: var(--text-main); background: #e5e7eb; }
+.cat-tab-btn.active {
+  background: var(--ali-red-gradient);
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(255, 71, 71, 0.25);
+}
+
+/* --- Main Layout Container --- */
+.container {
+  max-width: 1450px;
+  margin: 1.75rem auto;
+  padding: 0 2rem;
+}
+
+/* --- AliExpress Wholesale Promotional Hero Banner --- */
+.ali-hero-banner {
+  display: grid;
+  grid-template-columns: 2.5fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.hero-promo-card {
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+.hero-title { font-size: 2.4rem; font-weight: 800; line-height: 1.2; margin-bottom: 0.75rem; color: var(--text-main); }
+.hero-subtitle { color: var(--text-muted); font-size: 1.05rem; max-width: 650px; margin-bottom: 1.5rem; }
+
+.hero-badges-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
+.hero-badge-pill {
+  background: #f8fafc;
+  border: 1px solid var(--border-glass);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-main);
+}
+.hero-badge-pill.gold { border-color: #fde68a; color: #d97706; background: #fffbeb; }
+.hero-badge-pill.emerald { border-color: #a7f3d0; color: #059669; background: #ecfdf5; }
+
+.hero-stats-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.stat-card-ali {
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+.stat-card-ali:hover { transform: translateX(5px); border-color: var(--ali-gold); box-shadow: var(--shadow-lg); }
+.stat-icon-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: #fff8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--ali-gold);
+  border: 1px solid #fde68a;
+}
+.stat-val-ali { font-size: 1.5rem; font-weight: 800; color: var(--text-main); font-family: var(--font-code); }
+.stat-label-ali { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+/* --- Product Grid & AliExpress Cards --- */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 1.5rem;
+}
+
+.ali-card {
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative;
+}
+.ali-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--ali-red);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+.card-img-container {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.ali-card:hover .card-img { transform: scale(1.08); }
+
+.bulk-deal-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: var(--ali-red-gradient);
+  color: #fff !important;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(255, 71, 71, 0.3);
+}
+.moq-pill-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: #10b981;
+  color: #fff !important;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.65rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.card-content-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.card-prod-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.4rem;
+  line-height: 1.35;
+}
+.supplier-verified-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: #d97706;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+/* AliExpress Wholesale Volume Discount Table Preview */
+.wholesale-preview-matrix {
+  background: #f8fafc;
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.matrix-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.matrix-row:last-child { margin-bottom: 0; }
+.matrix-price-val {
+  color: var(--ali-red);
+  font-weight: 800;
+  font-family: var(--font-code);
+  font-size: 0.9rem;
+}
+
+.card-actions-row {
+  display: flex;
+  gap: 0.65rem;
+  margin-top: auto;
+}
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+  outline: none;
+  text-decoration: none;
+}
+.btn-red {
+  background: var(--ali-red-gradient);
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(255, 71, 71, 0.25);
+}
+.btn-red:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255, 71, 71, 0.4); }
+
+.btn-gold {
+  background: var(--ali-gold-gradient);
+  color: #fff !important;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(255, 153, 0, 0.25);
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(255, 153, 0, 0.4); }
+
+.btn-emerald {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff !important;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+.btn-emerald:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4); }
+
+.btn-secondary {
+  background: #f3f4f6;
+  color: var(--text-main);
+  border: 1px solid #d1d5db;
+}
+.btn-secondary:hover { background: #e5e7eb; border-color: #9ca3af; }
+
+.btn-danger { background: linear-gradient(135deg, #f43f5e, #e11d48); color: #fff !important; }
+.btn-sm { padding: 0.45rem 0.85rem; font-size: 0.8rem; border-radius: 8px; }
+.w-full { width: 100%; }
+
+/* --- Modals & Overlays --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.modal-content {
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  width: 92%;
+  max-width: 700px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 2.25rem;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleUp { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.modal-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: #f3f4f6;
+  border: 1px solid var(--border-glass);
+  color: var(--text-muted);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.modal-close-btn:hover { background: var(--ali-red); color: #fff !important; border-color: var(--ali-red); }
+
+/* --- Forms & Inputs --- */
+.form-group { margin-bottom: 1.25rem; }
+.form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; }
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: var(--text-main);
+  font-family: var(--font-main);
+  padding: 0.8rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--ali-red);
+  box-shadow: 0 0 0 3px rgba(255, 71, 71, 0.15);
+}
+.form-textarea { resize: vertical; min-height: 95px; }
+
+/* --- AliExpress Wholesale Volume Matrix Modal Table --- */
+.ali-volume-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.ali-volume-table th, .ali-volume-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-glass);
+  text-align: left;
+}
+.ali-volume-table th { background: #f8fafc; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; }
+.ali-volume-table tr:hover td { background: #f9fafb; }
+
+/* --- Section 2.3 MOQ Sample Bypass Toggle Box --- */
+.ali-sample-bypass-box {
+  background: #ecfdf5;
+  border: 1px dashed #10b981;
+  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* --- AliExpress Step-by-Step Order Tracking Timeline --- */
+.ali-tracking-timeline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2.25rem 0 1.5rem;
+  position: relative;
+}
+.ali-step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  flex: 1;
+}
+.ali-step-circle {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+}
+.ali-step-node.completed .ali-step-circle {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+.ali-step-node.active .ali-step-circle {
+  background: var(--ali-gold);
+  border-color: #fff;
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(255, 153, 0, 0.4);
+  animation: pulseGold 1.5s infinite;
+}
+.ali-step-node.disputed .ali-step-circle {
+  background: var(--accent-rose);
+  border-color: var(--accent-rose);
+  color: #fff !important;
+  box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+}
+.ali-step-label { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-align: center; }
+.ali-step-node.completed .ali-step-label, .ali-step-node.active .ali-step-label { color: var(--text-main); font-weight: 800; }
+
+.ali-step-line {
+  flex: 1;
+  height: 3px;
+  background: #e5e7eb;
+  margin: 0 -10px;
+  transform: translateY(-16px);
+  z-index: 1;
+}
+.ali-step-line.completed { background: #10b981; }
+
+@keyframes pulseGold {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* --- Real-Time Supplier Chat Modal --- */
+.chat-window {
+  display: flex;
+  flex-direction: column;
+  height: 480px;
+  background: #f8fafc;
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  overflow: hidden;
+}
+.chat-messages-box {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.chat-bubble {
+  max-width: 75%;
+  padding: 0.85rem 1.15rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.chat-bubble.mine {
+  align-self: flex-end;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble.other {
+  align-self: flex-start;
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+.chat-bubble.system {
+  align-self: center;
+  background: #fef2f2;
+  border: 1px dashed #fecaca;
+  color: #dc2626;
+  font-size: 0.8rem;
+  text-align: center;
+  max-width: 90%;
+}
+
+/* --- Table & Data Grids --- */
+.ali-table-container {
+  background: #ffffff;
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+.ali-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.ali-data-table th, .ali-data-table td { padding: 1.1rem 1.35rem; border-bottom: 1px solid var(--border-glass); }
+.ali-data-table th {
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ali-data-table tr:last-child td { border-bottom: none; }
+.ali-data-table tr:hover td { background: #f9fafb; }
+
+/* --- Toast Notification System --- */
+.toast-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 5000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.toast-item {
+  background: #ffffff;
+  border-left: 4px solid #10b981;
+  border-top: 1px solid var(--border-glass);
+  border-right: 1px solid var(--border-glass);
+  border-bottom: 1px solid var(--border-glass);
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  color: var(--text-main);
+  min-width: 320px;
+  max-width: 450px;
+  animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.toast-item.warning { border-left-color: var(--ali-gold); }
+.toast-item.danger { border-left-color: var(--ali-red); }
+@keyframes slideRight { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+
+/* --- Section 5.5 Emergency 503 Overlay --- */
+.maintenance-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(254, 242, 242, 0.95);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+}

@@ -22,7 +22,6 @@ async function initDB() {
         connectionString: dbUrl,
         ssl: dbUrl.includes('localhost') ? false : { rejectUnauthorized: false }
       });
-      // Test connection
       await pool.query('SELECT 1;');
       console.log('✅ Connected to live PostgreSQL database.');
       dbClient = {
@@ -31,6 +30,26 @@ async function initDB() {
         isPGlite: false
       };
       isPGlite = false;
+
+      // Ensure schema exists and seed if empty
+      try {
+        const checkTable = await pool.query("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'users');");
+        if (!checkTable.rows[0].exists) {
+          console.log('⚡ Initializing schema on live PostgreSQL...');
+          const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
+          await pool.query(schemaSql);
+        }
+        const checkUsers = await pool.query('SELECT COUNT(*) as count FROM users;');
+        if (parseInt(checkUsers.rows[0].count, 10) === 0) {
+          console.log('🌱 Seeding live PostgreSQL with B2B marketplace dataset...');
+          const seeder = require('./seeder');
+          await seeder.seed(dbClient);
+          console.log('✅ Seeding completed.');
+        }
+      } catch (seedErr) {
+        console.warn('⚠️ Auto-seed check warning:', seedErr.message);
+      }
+
       return dbClient;
     } catch (err) {
       console.warn('⚠️ Could not connect to DATABASE_URL. Falling back to embedded PGlite engine:', err.message);
