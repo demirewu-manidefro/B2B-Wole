@@ -1,4 +1,5 @@
 const db = require('../db');
+const bcrypt = require('bcryptjs');
 
 /**
  * Admin & System Controller
@@ -117,10 +118,130 @@ async function getCategories(req, res) {
   }
 }
 
+/**
+ * POST /api/users
+ * Allows anyone to open an account with name and phone number (Buyer or Vendor).
+ */
+async function createUser(req, res) {
+  try {
+    const { name, phone, role } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ error: 'Invalid Payload', message: 'Name and phone number are required.' });
+    }
+    const userRole = role === 'vendor' ? 'vendor' : 'buyer';
+    
+    // Check if phone already exists
+    const existing = await db.query('SELECT id, name, phone, role, is_verified FROM users WHERE phone = $1;', [phone]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Duplicate Phone', message: 'An account with this phone number already exists.', user: existing.rows[0] });
+    }
+
+    const passHash = await bcrypt.hash('default123', 10);
+    const result = await db.query(
+      `INSERT INTO users (name, phone, password_hash, role, is_verified) VALUES ($1, $2, $3, $4, true) RETURNING id, name, phone, role, is_verified, created_at;`,
+      [name, phone, passHash, userRole]
+    );
+
+    const newUser = result.rows[0];
+    await db.query(
+      `INSERT INTO audit_logs (user_id, event_type, severity, details) VALUES ($1, $2, $3, $4);`,
+      [newUser.id, 'USER_REGISTRATION', 'INFO', `New ${userRole.toUpperCase()} account opened by ${name} (${phone}).`]
+    );
+
+    return res.status(201).json({ message: 'Account opened successfully.', user: newUser });
+  } catch (err) {
+    console.error('createUser error:', err.message);
+    return res.status(500).json({ error: 'Registration Error', message: err.message });
+  }
+}
+
+/**
+ * POST /api/admin/categories
+ * Admin adds a new category domain.
+ */
+async function createCategory(req, res) {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only System Administrators can create new categories.' });
+    }
+    const { name, parent_id, slug } = req.body;
+    if (!name || !slug) {
+      return res.status(400).json({ error: 'Invalid Payload', message: 'Category name and slug are required.' });
+    }
+    const result = await db.query(
+      `INSERT INTO categories (name, parent_id, slug) VALUES ($1, $2, $3) RETURNING *;`,
+      [name, parent_id || null, slug]
+    );
+    return res.status(201).json({ message: 'Category added successfully.', category: result.rows[0] });
+  } catch (err) {
+    console.error('createCategory error:', err.message);
+    return res.status(500).json({ error: 'Category Creation Error', message: err.message });
+  }
+}
+
+/**
+ * GET /api/admin/stats
+ * Admin dashboard overview stats: entire market, payments, escrow volume, categories, and recent orders.
+ */
+async function getAdminDashboardStats(req, res) {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Forbidden', message: 'Only System Administrators can access central dashboard analytics.' });
+    }
+
+    const [usersRes, productsRes, ordersRes, escrowRes, recentOrdersRes] = await Promise.all([
+      db.query(`SELECT role, COUNT(*) as count FROM users GROUP BY role;`),
+      db.query(`SELECT status, COUNT(*) as count FROM products GROUP BY status;`),
+      db.query(`SELECT status, COUNT(*) as count FROM orders GROUP BY status;`),
+      db.query(`SELECT COALESCE(SUM(total_price), 0) as total_escrow_volume, COALESCE(SUM(commission_amount), 0) as total_fees FROM orders WHERE status NOT IN ('Refunded', 'Created');`),
+      db.query(`
+        SELECT o.id, o.total_price as total_amount, o.status, 
+               CASE WHEN o.tx_ref LIKE 'CHAPA%' THEN 'Chapa 💳' WHEN o.tx_ref LIKE 'TELEBIRR%' THEN 'Telebirr 📱' ELSE 'Escrow Gateway 🏦' END as payment_method, 
+               o.created_at,
+               b.name as buyer_name, v.name as vendor_name, 
+               COALESCE(o.items->0->>'title', 'Wholesale B2B Order') as product_title
+        FROM orders o
+        JOIN users b ON o.buyer_id = b.id
+        JOIN users v ON o.vendor_id = v.id
+        ORDER BY o.created_at DESC LIMIT 10;
+      `)
+    ]);
+
+    const usersBreakdown = usersRes.rows.reduce((acc, r) => ({ ...acc, [r.role]: parseInt(r.count, 10) }), {});
+    const totalUsers = Object.values(usersBreakdown).reduce((a, b) => a + b, 0);
+
+    const productsBreakdown = productsRes.rows.reduce((acc, r) => ({ ...acc, [r.status]: parseInt(r.count, 10) }), {});
+    const totalProducts = Object.values(productsBreakdown).reduce((a, b) => a + b, 0);
+
+    const ordersBreakdown = ordersRes.rows.reduce((acc, r) => ({ ...acc, [r.status]: parseInt(r.count, 10) }), {});
+    const totalOrders = Object.values(ordersBreakdown).reduce((a, b) => a + b, 0);
+
+    return res.json({
+      stats: {
+        totalUsers,
+        usersBreakdown,
+        totalProducts,
+        productsBreakdown,
+        totalOrders,
+        ordersBreakdown,
+        escrowVolume: parseFloat(escrowRes.rows[0].total_escrow_volume),
+        platformFees: parseFloat(escrowRes.rows[0].total_fees),
+        recentOrders: recentOrdersRes.rows
+      }
+    });
+  } catch (err) {
+    console.error('getAdminDashboardStats error:', err.message);
+    return res.status(500).json({ error: 'Analytics Error', message: err.message });
+  }
+}
+
 module.exports = {
   getAuditLogs,
   toggleMaintenance,
   getSystemSettings,
   getUsers,
-  getCategories
+  getCategories,
+  createUser,
+  createCategory,
+  getAdminDashboardStats
 };

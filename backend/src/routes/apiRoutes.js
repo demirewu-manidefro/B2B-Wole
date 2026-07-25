@@ -11,8 +11,11 @@ const adminController = require('../controllers/adminController');
 
 // --- Reference Data Routes (Public / Basic Auth) ---
 router.get('/users', adminController.getUsers);
+router.post('/users', adminController.createUser);
 router.get('/categories', adminController.getCategories);
 router.get('/admin/settings', adminController.getSystemSettings);
+router.get('/admin/stats', auth.authenticate, auth.requireRole('admin'), adminController.getAdminDashboardStats);
+router.post('/admin/categories', auth.authenticate, auth.requireRole('admin'), adminController.createCategory);
 
 // --- Section 6 & 7: Product Catalog & JSONB Querying (@>) ---
 router.get('/products', productController.getProducts);
