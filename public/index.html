@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethiopian B2B Wholesale & Escrow Marketplace (Architecture Engine)</title>
+  <meta name="description" content="A highly scalable B2B multi-vendor marketplace tailored for the Ethiopian commerce ecosystem with dynamic JSONB structural types, pessimistic locking, and real-time escrow arbitration.">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <!-- Glassmorphic Navbar -->
+  <nav class="navbar">
+    <a href="#" class="nav-brand">
+      <span>🇪🇹 ETHIO-B2B <span class="gradient-text-emerald">ESCROW</span> MARKET</span>
+      <span class="brand-badge">PostgreSQL v15+ Engine</span>
+    </a>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-view="catalogView">🛍️ Wholesale Catalog</button>
+      <button class="tab-btn" data-view="rfqView">💬 RFQ Negotiations</button>
+      <button class="tab-btn" data-view="freightView">🚚 Freight Consolidation</button>
+      <button class="tab-btn" data-view="escrowView">🔒 Escrow Ledger</button>
+      <button class="tab-btn" id="tab-btn-admin" data-view="adminView" style="display: none;">⚙️ Admin Center</button>
+    </div>
+
+    <div class="nav-controls">
+      <div class="persona-selector">
+        <label for="persona-select">Persona:</label>
+        <select id="persona-select" class="persona-select"></select>
+        <span id="active-role-badge" class="brand-badge role-buyer">BUYER</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <h1>Unified Multi-Vertical <span class="gradient-text-gold">Commerce Engine</span></h1>
+        <p>Seamlessly handling Apparel, Electronics, FMCG, and Hospitality rentals within a single-schema PostgreSQL JSONB architecture. Guarded by Pessimistic Concurrency Locking, Idempotent Webhooks, IDOR Shielding, and Real-Time Chat Scrubbers.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-box">
+          <div class="stat-num">4</div>
+          <div class="stat-label">Vertical Domains</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">2.5%</div>
+          <div class="stat-label">Platform Fee</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">0</div>
+          <div class="stat-label">Race Conditions</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 1. Catalog View -->
+    <section id="catalogView" class="view-section active">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="btn btn-secondary filter-chip active" data-type="all" data-val="all">All Domains</button>
+          <button class="btn btn-secondary filter-chip" data-type="category" data-val="traditional-habesha-wear">👘 Habesha Wear</button>
+          <button class="btn btn-secondary filter-chip" data-type="category" data-val="solar-power-inverters">⚡ Solar & Power</button>
+          <button class="btn btn-secondary filter-chip" data-type="category" data-val="specialty-coffee-grains">☕ Export Coffee</button>
+          <button class="btn btn-secondary filter-chip" data-type="category" data-val="resort-suites-rooms">🏨 Resort Bookings</button>
+          
+          <!-- Section 7 JSONB Containment Filter (@>) Shortcuts -->
+          <span style="color: var(--text-muted); align-self: center; margin-left: 0.5rem; font-size: 0.85rem;">JSONB (@>):</span>
+          <button class="btn btn-secondary filter-chip btn-sm" data-type="attr" data-val="size:32" title="Executes: WHERE attributes @> '{&quot;size&quot;: &quot;32&quot;}'">Size 32</button>
+          <button class="btn btn-secondary filter-chip btn-sm" data-type="spec" data-val="has_wifi:true" title="Executes: WHERE specifications @> '{&quot;has_wifi&quot;: true}'">Resorts w/ Wifi</button>
+          <button class="btn btn-secondary filter-chip btn-sm" data-type="attr" data-val="battery_compatibility:Lithium-Ion" title="Executes: WHERE attributes @> '{&quot;battery_compatibility&quot;: &quot;Lithium-Ion&quot;}'">Lithium Compatible</button>
+        </div>
+
+        <div id="vendor-catalog-actions" style="display: none; gap: 0.75rem;">
+          <button class="btn btn-gold" id="btn-open-create-product">➕ Publish B2B Product</button>
+        </div>
+      </div>
+
+      <div id="catalog-grid" class="grid-cols-4"></div>
+    </section>
+
+    <!-- 2. RFQ Negotiation View -->
+    <section id="rfqView" class="view-section">
+      <div style="background: var(--bg-card); padding: 1.5rem 2rem; border-radius: 18px; border: 1px solid var(--border-glass); margin-bottom: 2rem;">
+        <h2>Section 2.2: <span class="gradient-text-gold">Request for Quotation (RFQ)</span> & Duplex Engine</h2>
+        <p style="color: var(--text-muted); max-width: 800px;">When buyers exceed standard wholesale batches or require custom trade contracts, they bypass predefined tiers by initializing an RFQ state machine. Supported by real-time Socket.io duplex communication, custom bulk unit costs are negotiated and automatically override default pricing arrays upon vendor approval.</p>
+      </div>
+      <div id="rfq-list-container"></div>
+    </section>
+
+    <!-- 3. Shared-Freight Consolidation Hub -->
+    <section id="freightView" class="view-section">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2>Section 2.4: <span class="gradient-text-emerald">Shared-Freight Consolidation Hub</span></h2>
+          <p style="color: var(--text-muted); max-width: 750px;">To lower inter-regional shipping overhead across Ethiopia, the transactional layer aggregates destination metadata. Micro-retailers sharing delivery footprints within temporal windows can split commercial vehicle rental rates in real time.</p>
+        </div>
+        <button class="btn btn-primary" id="btn-open-create-pool">➕ Create Consolidation Route</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Route (Origin ➔ Destination)</th>
+              <th>Commercial Vehicle</th>
+              <th>Total Rental Rate</th>
+              <th>Capacity (Status)</th>
+              <th>Current Cost Share</th>
+              <th>Active Members</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="freight-pools-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. Escrow Transaction Tracker -->
+    <section id="escrowView" class="view-section">
+      <div style="background: var(--bg-card); padding: 1.5rem 2rem; border-radius: 18px; border: 1px solid var(--border-glass); margin-bottom: 2rem;">
+        <h2>Section 3: <span class="gradient-text-emerald">The Escrow Lifecycle</span> & State Machine</h2>
+        <p style="color: var(--text-muted); max-width: 850px;">All payments flow through a centralized financial isolation layer managed via localized payment aggregators (Chapa / Telebirr). Escrow capital is held securely in platform pool until buyer inspection triggers automated disbursement minus a localized 2.5% commission.</p>
+      </div>
+      <div id="escrow-list-container"></div>
+    </section>
+
+    <!-- 5. Admin Command Center -->
+    <section id="adminView" class="view-section">
+      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; margin-bottom: 2rem;">
+        <!-- Global Control Card -->
+        <div class="card" style="padding: 2rem; border-color: rgba(245, 158, 11, 0.4);">
+          <h2>Section 5.5: <span class="gradient-text-gold">Global Maintenance</span> Control</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">During production updates, data structural updates, or active external security mitigations, administrators require instantaneous global control. Toggling this switch immediately rejects inbound non-administrative API hits with a standardized 503 Service Unavailable response.</p>
+          
+          <div style="background: rgba(0,0,0,0.5); padding: 1.25rem; border-radius: 14px; border: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="color: #fff; display: block;">Emergency 503 API Freeze</strong>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Enforce global maintenance mode</span>
+            </div>
+            <label style="position: relative; display: inline-block; width: 60px; height: 34px;">
+              <input type="checkbox" id="toggle-maintenance-mode" style="opacity: 0; width: 0; height: 0;" />
+              <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #374151; transition: .3s; border-radius: 34px; border: 2px solid var(--border-glass);" id="switch-slider"></span>
+            </label>
+          </div>
+          <style>
+            #toggle-maintenance-mode:checked + #switch-slider { background-color: var(--accent-rose); box-shadow: 0 0 15px rgba(244, 63, 94, 0.6); }
+            #switch-slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 4px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+            #toggle-maintenance-mode:checked + #switch-slider:before { transform: translateX(26px); }
+          </style>
+          
+          <div style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-muted);">
+            Handshake App Version String: <strong id="admin-app-version" style="color: var(--accent-emerald); font-family: var(--font-code);">1.0.0</strong>
+          </div>
+        </div>
+
+        <!-- Security Architecture Guide -->
+        <div class="card" style="padding: 2rem;">
+          <h2>Section 5: <span class="gradient-text-emerald">Security Architecture Guardrails</span></h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-glass);">
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">🔒 5.1 Concurrency Lock Engine</strong>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Wraps checkouts in explicit database transactions leveraging Pessimistic Locking (SELECT ... FOR UPDATE) to prevent negative stock race conditions.</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-glass);">
+              <strong style="color: var(--accent-emerald); font-size: 0.9rem;">🛡️ 5.2 Idempotent Webhooks</strong>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Cryptographic HMAC signature validation + DB unique constraint on tx_ref string. Duplicate webhooks drop out cleanly with 200 OK without multiplying balance records.</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-glass);">
+              <strong style="color: var(--accent-blue); font-size: 0.9rem;">🛡️ 5.3 IDOR Perimeter Shield</strong>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Queries strictly reject isolated ID lookups, enforcing token-extracted identity scoping (WHERE id = ? AND vendor_id = current_user_id).</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid var(--border-glass);">
+              <strong style="color: var(--accent-rose); font-size: 0.9rem;">💬 5.4 Chat Security Scrubbers</strong>
+              <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Regex filters continuously scan Socket.io streams for phone numbers, bank accounts, or external links, obfuscating tokens and logging audit trails.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Audit Trails Table -->
+      <h2>Platform Security & Operational Audit Trails</h2>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Severity</th>
+              <th>Event Type</th>
+              <th>User Perimeter</th>
+              <th>Audit Trail Details</th>
+            </tr>
+          </thead>
+          <tbody id="audit-logs-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- --- MODALS & OVERLAYS --- -->
+
+  <!-- 1. Tiered Pricing & Sample Order Modal -->
+  <div id="modal-pricing" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <span class="brand-badge" id="modal-vendor-name">VENDOR</span>
+      <h2 id="modal-title" style="margin-top: 0.5rem; color: #fff;">Product Title</h2>
+
+      <div style="margin: 1.25rem 0;">
+        <label class="form-label">Select Inventory Variant SKU:</label>
+        <select id="modal-variant-select" class="form-select"></select>
+      </div>
+
+      <!-- Volume Discount Matrix Table -->
+      <div style="background: rgba(0,0,0,0.5); padding: 1rem; border-radius: 14px; border: 1px solid var(--border-glass); margin-bottom: 1.5rem;">
+        <strong style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Volume-Based Discount Tiers (Section 2.1)</strong>
+        <table style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; border-collapse: collapse;">
+          <tbody id="modal-tiers-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Quantity Slider -->
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between;">
+          <label class="form-label" style="margin: 0;">Order Quantity / Nights Duration:</label>
+          <strong style="color: var(--accent-gold); font-size: 1.2rem; font-family: var(--font-code);" id="modal-qty-val">10</strong>
+        </div>
+        <input type="range" id="modal-qty-slider" min="1" max="200" value="10" style="width: 100%; margin-top: 0.75rem; accent-color: var(--accent-emerald); cursor: pointer;" />
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+          <span>Min MOQ: <strong id="modal-moq-val">10 Units</strong></span>
+          <span>Max Bulk Volume: 200+</span>
+        </div>
+      </div>
+
+      <!-- Section 2.3 Retail Sample Pipeline Toggle -->
+      <div id="sample-toggle-container" style="background: rgba(16, 185, 129, 0.1); border: 1px dashed var(--accent-emerald); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <strong style="color: var(--accent-emerald); font-size: 0.95rem;">🧪 Section 2.3: Retail Sample Pipeline</strong>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Audit physical quality before executing capital-intensive bulk contracts. Programmatically bypasses MOQ barrier (exclusively when checked).</p>
+        </div>
+        <label style="cursor: pointer; display: flex; align-items: center;">
+          <input type="checkbox" id="modal-sample-toggle" style="width: 20px; height: 20px; accent-color: var(--accent-emerald);" />
+        </label>
+      </div>
+
+      <!-- Shipping Address -->
+      <div class="form-group">
+        <label class="form-label">Destination Shipping Terminal / Address:</label>
+        <input type="text" id="modal-shipping-address" class="form-input" value="Addis Ababa, Bole Subcity, Woreda 03, House 441" />
+      </div>
+
+      <!-- Price Summary Bar -->
+      <div style="background: var(--bg-primary); padding: 1.25rem; border-radius: 14px; border: 1px solid var(--border-glass); display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Dynamic Unit Rate: <strong style="color: #fff; font-family: var(--font-code);" id="calc-unit-price">4,500 ETB</strong></div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Protected by Section 5.1 Pessimistic Concurrency Lock</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Total Capital Commitment:</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-emerald); font-family: var(--font-code);" id="calc-total-price">45,000 ETB</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary w-full" id="btn-modal-checkout" style="padding: 1rem; font-size: 1.05rem;">
+        🔒 Commit Checkout (Wrap in SQL Transaction FOR UPDATE)
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. RFQ Initialization Modal -->
+  <div id="modal-rfq" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <span class="brand-badge role-vendor">SECTION 2.2 RFQ ENGINE</span>
+      <h2 id="rfq-product-title" style="margin-top: 0.5rem; color: #fff;">Product Title</h2>
+      
+      <input type="hidden" id="rfq-vendor-id" />
+      <input type="hidden" id="rfq-product-id" />
+
+      <div class="form-group">
+        <label class="form-label">Target Bulk Batch Quantity (Units):</label>
+        <input type="number" id="rfq-target-qty" class="form-input" value="100" min="1" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Proposed Custom Bulk Rate (ETB per unit):</label>
+        <input type="number" id="rfq-proposed-price" class="form-input" value="3200" step="50" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Trade Specification Notes / Terms for Vendor:</label>
+        <textarea id="rfq-notes" class="form-textarea" placeholder="Describe delivery timelines or custom embroidery requirements. Do not include phone numbers or bank accounts (automatically scrubbed by Section 5.4)."></textarea>
+      </div>
+
+      <button class="btn btn-gold w-full" id="btn-modal-rfq-submit" style="padding: 1rem; font-size: 1rem;">
+        🚀 Initialize RFQ Negotiation State Machine
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Real-Time Duplex Socket.io Chat Room Modal -->
+  <div id="modal-chat" class="modal-overlay">
+    <div class="modal-content" style="max-width: 750px; padding: 1.5rem;">
+      <button class="modal-close">&times;</button>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <span class="brand-badge role-admin">REAL-TIME DUPLEX SOCKET.IO</span>
+          <h3 id="chat-room-title" style="color: #fff; margin-top: 0.25rem;">Room #101 - Live Negotiation</h3>
+        </div>
+        <div style="font-size: 0.75rem; color: var(--accent-rose); font-weight: 700;">🛡️ Section 5.4 Regex Scrubber Active</div>
+      </div>
+
+      <div class="chat-container">
+        <div class="chat-messages" id="chat-messages-container"></div>
+        <form class="chat-input-area" id="chat-input-form">
+          <input type="text" id="chat-input-text" class="chat-input" placeholder="Type message or negotiate custom bulk unit costs..." autocomplete="off" />
+          <button type="submit" class="btn btn-primary" style="padding: 0 1.5rem;">Send ➔</button>
+        </form>
+      </div>
+
+      <!-- Test Security Scrubber Shortcuts -->
+      <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(244, 63, 94, 0.1); border: 1px dashed var(--accent-rose); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <span style="font-size: 0.8rem; color: #fff;"><strong>🧪 Test Section 5.4 Guardrails:</strong> Click to send prohibited offline contact details:</span>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn btn-danger btn-sm" id="btn-test-phone-scrub">Test Phone Scrubber (+2519...)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-test-bank-scrub">Test Bank Scrubber (CBE 1000...)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Create Shared-Freight Route Modal -->
+  <div id="modal-create-pool" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <span class="brand-badge role-buyer">SECTION 2.4 CONSOLIDATION</span>
+      <h2 style="margin-top: 0.5rem; color: #fff;">Create Shared-Freight Route</h2>
+
+      <form id="form-create-pool">
+        <div class="form-group">
+          <label class="form-label">Origin Terminal:</label>
+          <input type="text" id="pool-origin" class="form-input" value="Addis Ababa (Merkato Wholesale Hub)" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Destination City / Commercial Hub:</label>
+          <input type="text" id="pool-dest" class="form-input" value="Adama / Nazret Commercial Expressway" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Departure Temporal Window:</label>
+          <input type="text" id="pool-window" class="form-input" value="2026-07-31 07:00 AM" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Commercial Vehicle Type:</label>
+          <select id="pool-vehicle" class="form-select">
+            <option value="Isuzu Freight Truck (5 Ton)">Isuzu Freight Truck (5 Ton)</option>
+            <option value="Commercial Transit Express Van">Commercial Transit Express Van</option>
+            <option value="Cross-Country Bus Cargo Hold">Cross-Country Bus Cargo Hold</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Total Vehicle Rental Rate (ETB):</label>
+            <input type="number" id="pool-rate" class="form-input" value="8000" step="500" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Micro-Retailer Participants:</label>
+            <input type="number" id="pool-max" class="form-input" value="4" min="2" max="10" required />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-full" style="padding: 1rem; font-size: 1rem;">🚚 Initialize Route & Open Cost-Pool</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. Create B2B Product Modal (Vendor/Admin) -->
+  <div id="modal-create-product" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <span class="brand-badge role-vendor">VENDOR CATALOG MANAGEMENT</span>
+      <h2 style="margin-top: 0.5rem; color: #fff;">Publish Wholesale Product</h2>
+
+      <form id="form-create-product">
+        <div class="form-group">
+          <label class="form-label">Product Title:</label>
+          <input type="text" id="prod-title" class="form-input" placeholder="e.g. Traditional Habesha Tibeb Scarf (Bulk)" required />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Vertical Domain Category:</label>
+            <select id="prod-category" class="form-select">
+              <option value="2">Traditional Habesha Wear</option>
+              <option value="5">Solar & Power Inverters</option>
+              <option value="8">Specialty Coffee & Grains</option>
+              <option value="10">Hotel Rooms & Resort Suites</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Standard MOQ Threshold:</label>
+            <input type="number" id="prod-moq" class="form-input" value="10" min="1" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description / Trade Terms:</label>
+          <textarea id="prod-desc" class="form-textarea" placeholder="Describe quality, origins, or commercial packaging..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section 4 Cloud Storage Video Pointer URL (Supabase/S3):</label>
+          <input type="url" id="prod-video-url" class="form-input" value="https://ebzsmbwwxayngkwwldqf.supabase.co/storage/v1/object/public/videos/habesha-promo-30s.mp4" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Variant SKU:</label>
+            <input type="text" id="prod-sku" class="form-input" value="SKU-NEW-01" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stock Qty:</label>
+            <input type="number" id="prod-stock" class="form-input" value="50" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Base Price (ETB):</label>
+            <input type="number" id="prod-price" class="form-input" value="1500" required />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-gold w-full" style="padding: 1rem; font-size: 1rem;">➕ Publish to Global Marketplace</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. Raise Arbitration Dispute Modal -->
+  <div id="modal-dispute" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close">&times;</button>
+      <span class="brand-badge role-admin">SECTION 3 ARBITRATION PROTOCOL</span>
+      <h2 style="margin-top: 0.5rem; color: #fff;">Raise Dispute / Halt Countdown</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Transaction Reference: <strong id="dispute-tx-ref" style="color: var(--accent-gold); font-family: var(--font-code);"></strong></p>
+      
+      <input type="hidden" id="dispute-order-id" />
+
+      <form id="form-resolve-dispute">
+        <div class="form-group" style="margin-top: 1rem;">
+          <label class="form-label">Detailed Text Logs & Evidence of Manufacturing Defects / Missing Inventory:</label>
+          <textarea id="dispute-details-text" class="form-textarea" style="min-height: 120px;" placeholder="Explain the defect or missing inventory. When submitted, the transaction countdown halts and state locks automatically for Admin review..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger w-full" style="padding: 1rem; font-size: 1rem;">🚨 Lock Transaction & Require Admin Arbitration</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Section 5.5 Global Maintenance 503 Overlay -->
+  <div id="maintenance-overlay" class="maintenance-overlay">
+    <div class="maintenance-icon">🛑</div>
+    <h1 style="color: #fff; margin-bottom: 0.5rem;">503 Service Unavailable</h1>
+    <h2 style="color: var(--accent-gold); margin-bottom: 1rem;">Global Maintenance Mode Active</h2>
+    <p style="color: var(--text-muted); max-width: 600px; margin-bottom: 2rem;">The B2B Wholesale & Escrow Marketplace is currently undergoing scheduled production updates, data structural updates, or active external security mitigations. All non-administrative API requests are rejected by platform middleware.</p>
+    <button class="btn btn-secondary" onclick="document.getElementById('maintenance-overlay').classList.remove('active')">
+      Dismiss Overlay (Demo UI Mode)
+    </button>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/socket-client.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
