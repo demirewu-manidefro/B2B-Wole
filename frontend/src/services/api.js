@@ -51,12 +51,12 @@ class ApiService {
 
   // --- Catalog Endpoints ---
   getProducts(category = null) {
-    const query = category ? `?category=${encodeURIComponent(category)}` : '';
+    const query = category ? `?category_slug=${encodeURIComponent(category)}` : '';
     return this.request(`/products${query}`);
   }
 
   queryJsonbContainment(attributesJson) {
-    return this.request(`/products/query?attributes=${encodeURIComponent(JSON.stringify(attributesJson))}`);
+    return this.request(`/products?attr=${encodeURIComponent(JSON.stringify(attributesJson))}`);
   }
 
   createProduct(productData) {
@@ -80,7 +80,7 @@ class ApiService {
 
   updateOrderStatus(orderId, status) {
     return this.request(`/orders/${orderId}/status`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ status }),
     });
   }
@@ -99,7 +99,7 @@ class ApiService {
 
   updateRfqStatus(id, status, targetPrice = null) {
     return this.request(`/rfq/${id}/status`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify({ status, target_price: targetPrice }),
     });
   }
@@ -125,8 +125,7 @@ class ApiService {
 
   // --- Security & Webhooks (Section 5.2, 5.5) ---
   simulateWebhook(webhookData) {
-    // In demo mode, we hit webhook endpoint directly with simulated headers
-    return fetch(`${API_BASE}/webhooks/payment`, {
+    return fetch(`${API_BASE}/webhooks/chapa`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -141,13 +140,37 @@ class ApiService {
   }
 
   getMaintenanceStatus() {
-    return this.request('/admin/maintenance');
+    return this.request('/admin/settings').then(res => ({
+      enabled: res.settings?.maintenance_mode || false,
+      reason: res.settings?.maintenance_mode ? '503 API Freeze Active' : ''
+    }));
   }
 
   toggleMaintenance(enabled, reason) {
     return this.request('/admin/maintenance', {
       method: 'POST',
-      body: JSON.stringify({ enabled, reason }),
+      body: JSON.stringify({ maintenance_mode: enabled, reason }),
+    }).then(res => ({
+      enabled: res.maintenance_mode || false,
+      reason: res.maintenance_mode ? reason || '503 API Freeze Active' : ''
+    }));
+  }
+
+  registerUser(userData) {
+    return this.request('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  getAdminStats() {
+    return this.request('/admin/stats');
+  }
+
+  createCategory(categoryData) {
+    return this.request('/admin/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData),
     });
   }
 }
