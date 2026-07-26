@@ -1,21 +1,24 @@
-import React, { useState } from 'react';
-import { Search, ShieldCheck, User, ShoppingBag, Radio, Sparkles, Filter, Zap, UserPlus } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Search, ShieldCheck, User, ShoppingBag, Radio, Sparkles, Filter, Zap, LogOut, ChevronDown, Package, MessageSquare, Truck, Lock } from 'lucide-react';
 
 export default function Navbar({ 
   currentPersona, 
-  onPersonaChange, 
-  allPersonas = [],
   activeTab, 
   onTabChange, 
   onSearchJsonb,
   cartCount,
   onOpenAdmin,
   onOpenCreateProduct,
-  onOpenRegister
+  onOpenRegister,
+  onSignOut,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [activeChip, setActiveChip] = useState(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
+
+  const isGuest = !currentPersona;
 
   const categories = [
     { id: 'All', label: 'All Wholesale Catalogs', icon: '🌍' },
@@ -35,12 +38,31 @@ export default function Navbar({
     }
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Role pill config
+  const roleMeta = {
+    buyer:  { label: '🛒 Buyer',  cls: 'role-buyer' },
+    vendor: { label: '🏪 Vendor', cls: 'role-vendor' },
+    admin:  { label: '⚖️ Admin',  cls: 'role-admin' },
+  };
+  const myRole = currentPersona ? (roleMeta[currentPersona.role] || roleMeta.buyer) : null;
+
   return (
     <header>
       {/* Top Announcement Bar */}
       <div className="top-announcement">
         <div className="top-badge-guarantee">
-          <ShieldCheck size={16} className="text-ali-gold" />
+          <ShieldCheck size={16} className="text-ali-red" />
           <span>AliExpress-Style Escrow Guarantee: 100% Chapa & Telebirr Capital Protection</span>
         </div>
         <div className="top-announcement-links">
@@ -60,7 +82,7 @@ export default function Navbar({
             <span className="ali-badge">WHOLESALE ESCROW</span>
           </a>
 
-          {/* AliExpress Search Bar with Category Select & JSONB Containment Shortcuts */}
+          {/* AliExpress Search Bar */}
           <div className="search-container">
             <div className="search-box-wrapper">
               <select 
@@ -119,83 +141,125 @@ export default function Navbar({
             </div>
           </div>
 
-          {/* Persona Switcher & Action Controls */}
+          {/* Header Controls */}
           <div className="header-controls">
-            {/* AliExpress-style Account Button (Screenshot 2) */}
-            <div className="relative group">
-              <button 
-                onClick={() => onOpenRegister('signin')}
-                className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl border-2 border-ali-gold/80 bg-bg-card hover:bg-ali-gold/15 hover:border-ali-gold transition-all text-left shadow-md cursor-pointer group"
-              >
-                <div className="w-8 h-8 rounded-full bg-ali-red/15 flex items-center justify-center text-ali-red border border-ali-red/30 shrink-0">
-                  <User size={18} className="text-ali-red group-hover:scale-110 transition-transform" />
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[11px] text-text-muted font-normal">Welcome</div>
-                  <div className="text-xs font-extrabold text-white group-hover:text-ali-gold transition-colors flex items-center gap-1">
-                    <span>{currentPersona ? currentPersona.name.split(' ')[0] : 'Sign in / Register'}</span>
-                    <span className="text-[10px] text-ali-gold font-mono font-normal">({currentPersona ? currentPersona.role : 'Guest'})</span>
+
+            {/* ===== GUEST: Sign In / Register Button ===== */}
+            {isGuest && (
+              <div className="guest-auth-area">
+                <button
+                  id="navbar-signin-btn"
+                  className="ali-signin-btn"
+                  onClick={() => onOpenRegister('signin')}
+                >
+                  <div className="ali-signin-icon">
+                    <User size={20} />
+                  </div>
+                  <div className="ali-signin-text">
+                    <span className="ali-signin-welcome">Welcome</span>
+                    <span className="ali-signin-cta">Sign in / Register</span>
+                  </div>
+                  <ChevronDown size={14} className="ali-signin-chevron" />
+                </button>
+                {/* Mini dropdown on hover */}
+                <div className="ali-guest-dropdown">
+                  <button
+                    className="ali-dropdown-btn-primary"
+                    onClick={() => onOpenRegister('signin')}
+                  >
+                    🔑 Sign In (ግባ)
+                  </button>
+                  <button
+                    className="ali-dropdown-btn-secondary"
+                    onClick={() => onOpenRegister('register')}
+                  >
+                    ✨ Register (ተመዝገብ)
+                  </button>
+                  <div className="ali-guest-dropdown-footer">
+                    <ShieldCheck size={13} /> 100% Secure & Free
                   </div>
                 </div>
-              </button>
-
-              {/* Hover Dropdown Menu for AliExpress Auth & Account Switching */}
-              <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-bg-card border border-border-glass shadow-2xl p-4 hidden group-hover:block z-50">
-                <div className="text-xs font-bold text-white mb-1">My B2B Account</div>
-                <div className="text-[11px] text-text-muted mb-3 truncate">
-                  Logged in as: <strong className="text-ali-gold">{currentPersona?.name}</strong>
-                </div>
-
-                <div className="space-y-2">
-                  <button
-                    onClick={() => onOpenRegister('signin')}
-                    className="w-full py-2 px-3 rounded-lg bg-ali-red text-white font-bold text-xs hover:bg-ali-red/90 transition-all text-center block shadow-md"
-                  >
-                    🔑 Sign In / Account Switch
-                  </button>
-                  <button
-                    onClick={() => onOpenRegister('register')}
-                    className="w-full py-2 px-3 rounded-lg border border-ali-gold text-ali-gold font-bold text-xs hover:bg-ali-gold/10 transition-all text-center block"
-                  >
-                    ✨ Register New Account
-                  </button>
-                </div>
-
-                <div className="border-t border-border-glass my-3"></div>
-
-                <div className="text-[10px] font-bold text-text-muted uppercase mb-1">Quick Persona Switch:</div>
-                <select 
-                  className="w-full bg-bg-main border border-border-glass rounded-lg p-1.5 text-xs text-white"
-                  value={currentPersona?.id || 1}
-                  onChange={(e) => onPersonaChange(Number(e.target.value))}
-                >
-                  {allPersonas.length > 0 ? (
-                    allPersonas.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))
-                  ) : (
-                    <>
-                      <option value={1}>Abebe Kebede (Buyer 🏢)</option>
-                      <option value={2}>Sara Tadesse (Vendor 👘)</option>
-                      <option value={3}>System Administrator (Admin ⚖️)</option>
-                    </>
-                  )}
-                </select>
               </div>
-            </div>
-
-            {currentPersona.role === 'vendor' && (
-              <button className="btn btn-gold btn-sm" onClick={onOpenCreateProduct}>
-                <Sparkles size={16} /> Publish SKU
-              </button>
             )}
 
-            {currentPersona.role === 'admin' && (
-              <button className="btn btn-red btn-sm" onClick={onOpenAdmin}>
-                <Radio size={16} /> 503 Freeze Hub
-              </button>
+            {/* ===== LOGGED IN: AliExpress-style "Hi, Name / Account" ===== */}
+            {!isGuest && (
+              <div className="profile-area" ref={profileRef}>
+                {/* AliExpress-style: User icon + "Hi, [FirstName]" + "Account ▾" */}
+                <button
+                  id="navbar-profile-btn"
+                  className={`ali-account-btn ${profileOpen ? 'open' : ''}`}
+                  onClick={() => setProfileOpen(o => !o)}
+                >
+                  <User size={20} className="ali-account-icon" />
+                  <div className="ali-account-text">
+                    <span className="ali-account-hi">Hi, {currentPersona.name?.split(' ')[0]}</span>
+                    <span className="ali-account-label">
+                      Account <ChevronDown size={11} className={`inline-block transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`} />
+                    </span>
+                  </div>
+                </button>
+
+                {profileOpen && (
+                  <div className="ali-profile-dropdown">
+                    {/* Profile header */}
+                    <div className="ali-profile-header">
+                      <div className="ali-profile-avatar-lg">
+                        {currentPersona.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <div className="ali-profile-fullname">{currentPersona.name}</div>
+                        <div className="ali-profile-phone">{currentPersona.phone || `ID: ${currentPersona.id}`}</div>
+                        <span className={`role-badge ${myRole?.cls} mt-1 inline-block`}>{myRole?.label}</span>
+                      </div>
+                    </div>
+
+                    <div className="ali-profile-divider" />
+
+                    {/* Quick links */}
+                    <div className="ali-profile-links">
+                      <button className="ali-profile-link" onClick={() => { onTabChange('orders'); setProfileOpen(false); }}>
+                        <Package size={15} /> My Orders & Escrow
+                      </button>
+                      <button className="ali-profile-link" onClick={() => { onTabChange('rfq'); setProfileOpen(false); }}>
+                        <MessageSquare size={15} /> RFQ Negotiations
+                      </button>
+                      <button className="ali-profile-link" onClick={() => { onTabChange('freight'); setProfileOpen(false); }}>
+                        <Truck size={15} /> Freight Pools
+                      </button>
+                      {currentPersona.role === 'admin' && (
+                        <button className="ali-profile-link admin" onClick={() => { onOpenAdmin(); setProfileOpen(false); }}>
+                          <Lock size={15} /> Admin Panel
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="ali-profile-divider" />
+
+                    {/* Vendor action */}
+                    {currentPersona.role === 'vendor' && (
+                      <button
+                        className="ali-profile-publish-btn"
+                        onClick={() => { onOpenCreateProduct(); setProfileOpen(false); }}
+                      >
+                        <Sparkles size={14} /> Publish New SKU
+                      </button>
+                    )}
+
+                    {/* Sign out */}
+                    <button
+                      id="navbar-signout-btn"
+                      className="ali-signout-btn"
+                      onClick={() => { onSignOut(); setProfileOpen(false); }}
+                    >
+                      <LogOut size={14} /> Sign Out (ውጣ)
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
+            {/* Cart / Escrow Ledger */}
             <button className="btn btn-secondary btn-sm" onClick={() => onTabChange('orders')}>
               <ShoppingBag size={18} className="text-ali-red" />
               <span>Escrow Ledger</span>
