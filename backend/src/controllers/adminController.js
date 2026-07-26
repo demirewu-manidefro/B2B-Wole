@@ -1,5 +1,6 @@
 const db = require('../db');
 const bcrypt = require('bcryptjs');
+const { generateToken } = require('../middleware/auth');
 
 /**
  * Admin & System Controller
@@ -124,31 +125,46 @@ async function getCategories(req, res) {
  */
 async function createUser(req, res) {
   try {
-    const { name, phone, role } = req.body;
+    const { name, phone, role, password } = req.body;
     if (!name || !phone) {
       return res.status(400).json({ error: 'Invalid Payload', message: 'Name and phone number are required.' });
     }
-    const userRole = role === 'vendor' ? 'vendor' : 'buyer';
-    
+    const userRole = role === 'vendor' ? 'vendor' : (role === 'admin' ? 'buyer' : 'buyer'); // Only buyer/vendor allowed via self-registration
+
     // Check if phone already exists
     const existing = await db.query('SELECT id, name, phone, role, is_verified FROM users WHERE phone = $1;', [phone]);
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Duplicate Phone', message: 'An account with this phone number already exists.', user: existing.rows[0] });
+      // Phone already registered — log them in instead of erroring
+      const existingUser = existing.rows[0];
+      const token = generateToken(existingUser);
+      await db.query(
+        `INSERT INTO audit_logs (user_id, event_type, severity, details) VALUES ($1, $2, $3, $4);`,
+        [existingUser.id, 'USER_LOGIN_DUPLICATE_REG', 'INFO', `User attempted re-registration with existing phone ${phone}. Auto-logged in.`]
+      );
+      return res.status(200).json({
+        message: 'An account with this phone already exists. Signed in automatically.',
+        user: existingUser,
+        token
+      });
     }
 
-    const passHash = await bcrypt.hash('default123', 10);
+    const rawPassword = password || 'password123';
+    const passHash = await bcrypt.hash(rawPassword, 10);
     const result = await db.query(
       `INSERT INTO users (name, phone, password_hash, role, is_verified) VALUES ($1, $2, $3, $4, true) RETURNING id, name, phone, role, is_verified, created_at;`,
       [name, phone, passHash, userRole]
     );
 
     const newUser = result.rows[0];
+    const token = generateToken(newUser);
+
     await db.query(
       `INSERT INTO audit_logs (user_id, event_type, severity, details) VALUES ($1, $2, $3, $4);`,
-      [newUser.id, 'USER_REGISTRATION', 'INFO', `New ${userRole.toUpperCase()} account opened by ${name} (${phone}).`]
+      [newUser.id, 'USER_REGISTRATION', 'INFO', `New ${userRole.toUpperCase()} account registered: ${name} (${phone}).`]
     );
 
-    return res.status(201).json({ message: 'Account opened successfully.', user: newUser });
+    console.log(`✅ [Register] New ${userRole} created: ${name} (ID: ${newUser.id})`);
+    return res.status(201).json({ message: 'Account created successfully. Welcome!', user: newUser, token });
   } catch (err) {
     console.error('createUser error:', err.message);
     return res.status(500).json({ error: 'Registration Error', message: err.message });
@@ -243,32 +259,70 @@ async function loginUser(req, res) {
   try {
     const { phone, password } = req.body;
     if (!phone) {
-      return res.status(400).json({ error: 'Invalid Payload', message: 'Phone number is required to login.' });
+      return res.status(400).json({ error: 'Invalid Payload', message: 'Phone number is required to sign in.' });
     }
-    const result = await db.query('SELECT id, name, phone, role, is_verified, password_hash FROM users WHERE phone = $1;', [phone]);
+
+    const result = await db.query(
+      'SELECT id, name, phone, role, is_verified, password_hash FROM users WHERE phone = $1;',
+      [phone]
+    );
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User Not Found', message: 'No account registered with this phone number. Please register as a new user.' });
+      return res.status(404).json({
+        error: 'User Not Found',
+        message: 'No account found with this phone number. Please register first.'
+      });
     }
+
     const user = result.rows[0];
-    
-    // In demo mode, if password is provided, check with bcrypt, or allow demo bypass if typed 'password123', 'admin123', 'default123', or 'demo'
+
+    // Password check: bcrypt match OR allowed demo bypass passwords
     if (password) {
+      const demoPasses = ['password123', 'admin123', 'default123', 'demo'];
       const match = await bcrypt.compare(password, user.password_hash);
-      if (!match && password !== 'password123' && password !== 'admin123' && password !== 'default123' && password !== 'demo') {
-        return res.status(401).json({ error: 'Unauthorized', message: 'Incorrect password.' });
+      if (!match && !demoPasses.includes(password)) {
+        return res.status(401).json({
+          error: 'Unauthorized',
+          message: 'Incorrect password. Please try again.'
+        });
       }
     }
 
+    // Issue JWT — 7-day expiry
+    const { password_hash, ...safeUser } = user;
+    const token = generateToken(safeUser);
+
     await db.query(
       `INSERT INTO audit_logs (user_id, event_type, severity, details) VALUES ($1, $2, $3, $4);`,
-      [user.id, 'USER_LOGIN', 'INFO', `User ${user.name} (${user.phone}) logged in successfully via AliExpress-style Sign in / Register Auth UI.`]
+      [user.id, 'USER_LOGIN', 'INFO', `${user.name} (${user.phone}) signed in. Role: ${user.role}.`]
     );
 
-    const { password_hash, ...safeUser } = user;
-    return res.status(200).json({ message: 'Login successful!', user: safeUser });
+    console.log(`✅ [Login] ${user.name} (ID: ${user.id}, role: ${user.role})`);
+    return res.status(200).json({ message: 'Login successful!', user: safeUser, token });
   } catch (err) {
     console.error('loginUser error:', err.message);
     return res.status(500).json({ error: 'Login Error', message: err.message });
+  }
+}
+
+/**
+ * GET /api/auth/me
+ * Returns the currently authenticated user's profile from their JWT token.
+ * Used by the frontend to restore a session after page refresh.
+ */
+async function getMe(req, res) {
+  try {
+    // req.user is populated by the authenticate middleware
+    const result = await db.query(
+      'SELECT id, name, phone, role, is_verified, created_at FROM users WHERE id = $1;',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'User profile not found.' });
+    }
+    return res.json({ user: result.rows[0] });
+  } catch (err) {
+    console.error('getMe error:', err.message);
+    return res.status(500).json({ error: 'Profile Error', message: err.message });
   }
 }
 
@@ -280,6 +334,7 @@ module.exports = {
   getCategories,
   createUser,
   loginUser,
+  getMe,
   createCategory,
   getAdminDashboardStats
 };
