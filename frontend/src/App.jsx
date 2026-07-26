@@ -19,7 +19,8 @@ import { socketService } from './services/socket';
 import { AlertCircle, CheckCircle, Info, ShieldCheck, Zap } from 'lucide-react';
 
 export default function App() {
-  const [currentPersona, setCurrentPersona] = useState({ id: 1, role: 'buyer', name: 'Abebe Kebede' });
+  // null = guest (not signed in), object = logged-in user
+  const [currentPersona, setCurrentPersona] = useState(null);
   const [activeTab, setActiveTab] = useState('catalog');
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -33,18 +34,10 @@ export default function App() {
   const [showCreatePool, setShowCreatePool] = useState(false);
   const [disputeOrder, setDisputeOrder] = useState(null);
   const [showAuth, setShowAuth] = useState(false); // false, 'signin', or 'register'
-  const [allPersonas, setAllPersonas] = useState([]);
 
   // Maintenance & Security state
   const [maintenance, setMaintenance] = useState({ enabled: false, reason: '' });
   const [toasts, setToasts] = useState([]);
-
-  const personasMap = {
-    1: { id: 1, role: 'buyer', name: 'Abebe Kebede (Buyer 🏢)' },
-    2: { id: 2, role: 'vendor', name: 'Sara Tadesse (Vendor 👘)' },
-    3: { id: 3, role: 'vendor', name: 'Dawit Mengistu (Tech Vendor ⚡)' },
-    4: { id: 4, role: 'admin', name: 'Platform Arbiter (Admin ⚖️)' }
-  };
 
   const showToast = (message, type = 'success') => {
     const id = Date.now() + Math.random();
@@ -54,29 +47,27 @@ export default function App() {
     }, 6000);
   };
 
-  const fetchUsersList = async () => {
-    try {
-      const res = await api.request('/users');
-      if (res && res.users) {
-        const formatted = res.users.map(u => ({
-          id: u.id,
-          role: u.role,
-          name: `${u.name} (${u.role === 'vendor' ? 'Vendor 🏪' : u.role === 'admin' ? 'Admin ⚖️' : 'Buyer 🛒'})`
-        }));
-        setAllPersonas(formatted);
-      }
-    } catch (e) {
-      console.warn('Failed to load users list:', e.message);
-    }
+  // Called after successful sign-in or register
+  const handleLoginSuccess = (newUser) => {
+    const persona = {
+      id: newUser.id,
+      role: newUser.role,
+      name: newUser.name,
+      phone: newUser.phone,
+    };
+    setCurrentPersona(persona);
+    api.setUserId(newUser.id);  // also sets currentUserId for x-user-id header fallback
+    socketService.connect(newUser.id);
+    showToast(`🎉 Welcome, ${newUser.name}! Signed in as ${newUser.role}.`, 'success');
   };
 
-  const handlePersonaChange = (newId) => {
-    const found = allPersonas.find(p => p.id === newId);
-    const persona = found || personasMap[newId] || personasMap[1];
-    setCurrentPersona(persona);
-    api.setUserId(newId);
-    socketService.connect(newId);
-    showToast(`👤 Persona Switched to: ${persona.name}. Authorizations updated!`, 'info');
+  // Sign out - go back to guest
+  const handleSignOut = () => {
+    api.clearSession();
+    setCurrentPersona(null);
+    setCartCount(0);
+    setActiveTab('catalog');
+    showToast('👋 Signed out successfully. See you again!', 'info');
   };
 
   const fetchProducts = async (category = null) => {
@@ -104,7 +95,7 @@ export default function App() {
     try {
       const data = await api.queryJsonbContainment(jsonQuery);
       setProducts(data.products || []);
-      showToast(`⚡ Section 7 JSONB Containment (@>) executed! Found ${data.products?.length || 0} matching SKUs.`, 'success');
+      showToast(`⚡ JSONB Containment (@>) executed! Found ${data.products?.length || 0} matching SKUs.`, 'success');
     } catch (err) {
       showToast(`❌ JSONB Query Error: ${err.message}`, 'danger');
     } finally {
@@ -113,12 +104,41 @@ export default function App() {
   };
 
   useEffect(() => {
-    api.setUserId(currentPersona.id);
-    socketService.connect(currentPersona.id);
+    // Restore session from localStorage JWT token (survives page refresh)
+    if (api.hasSession()) {
+      const cached = api.getCachedUser();
+      if (cached) {
+        // Optimistically show cached user, then verify with server
+        setCurrentPersona(cached);
+        api.setUserId(cached.id);
+        socketService.connect(cached.id);
+        // Verify token is still valid
+        api.getMe()
+          .then(res => {
+            setCurrentPersona(res.user);
+            api.setUserId(res.user.id);
+          })
+          .catch(() => {
+            // Token expired/invalid — clear session
+            api.clearSession();
+            setCurrentPersona(null);
+          });
+      }
+    }
     fetchProducts();
-    fetchUsersList();
     api.getMaintenanceStatus().then(res => setMaintenance(res)).catch(() => {});
   }, []);
+
+  // Guard: require sign-in for protected tabs
+  const handleTabChange = (tab) => {
+    const protectedTabs = ['rfq', 'freight', 'orders', 'admin'];
+    if (protectedTabs.includes(tab) && !currentPersona) {
+      setShowAuth('signin');
+      showToast('🔑 Please sign in to access this feature.', 'warning');
+      return;
+    }
+    setActiveTab(tab);
+  };
 
   return (
     <div className="min-h-screen pb-16">
@@ -135,25 +155,27 @@ export default function App() {
       </div>
 
       {/* Section 5.5 Emergency 503 Overlay */}
-      {maintenance.enabled && currentPersona.role !== 'admin' && (
+      {maintenance.enabled && currentPersona?.role !== 'admin' && (
         <MaintenanceOverlay 
           reason={maintenance.reason} 
-          onSwitchToAdmin={() => handlePersonaChange(4)} 
+          onSwitchToAdmin={() => setShowAuth('signin')} 
         />
       )}
 
       {/* Navigation Header */}
       <Navbar 
         currentPersona={currentPersona} 
-        onPersonaChange={handlePersonaChange}
-        allPersonas={allPersonas}
         activeTab={activeTab} 
-        onTabChange={setActiveTab} 
+        onTabChange={handleTabChange} 
         onSearchJsonb={handleSearchJsonb}
         cartCount={cartCount}
-        onOpenAdmin={() => setActiveTab('admin')}
-        onOpenCreateProduct={() => setShowCreateProduct(true)}
+        onOpenAdmin={() => handleTabChange('admin')}
+        onOpenCreateProduct={() => {
+          if (!currentPersona) { setShowAuth('signin'); return; }
+          setShowCreateProduct(true);
+        }}
         onOpenRegister={(tab = 'signin') => setShowAuth(tab)}
+        onSignOut={handleSignOut}
       />
 
       {/* Main Content Body */}
@@ -190,8 +212,14 @@ export default function App() {
                   <ProductCard 
                     key={p.id} 
                     product={p} 
-                    onSelect={(prod) => setSelectedProduct(prod)}
-                    onOpenChat={(prod) => setChatProduct(prod)}
+                    onSelect={(prod) => {
+                      if (!currentPersona) { setShowAuth('signin'); showToast('🔑 Sign in to view product details.', 'warning'); return; }
+                      setSelectedProduct(prod);
+                    }}
+                    onOpenChat={(prod) => {
+                      if (!currentPersona) { setShowAuth('signin'); showToast('🔑 Sign in to chat with suppliers.', 'warning'); return; }
+                      setChatProduct(prod);
+                    }}
                   />
                 ))}
               </div>
@@ -199,7 +227,7 @@ export default function App() {
           </div>
         )}
 
-        {activeTab === 'rfq' && (
+        {activeTab === 'rfq' && currentPersona && (
           <RfqView 
             currentPersona={currentPersona}
             onOpenChat={(prod) => setChatProduct(prod)}
@@ -208,7 +236,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'freight' && (
+        {activeTab === 'freight' && currentPersona && (
           <FreightPoolView 
             currentPersona={currentPersona}
             onOpenCreatePool={() => setShowCreatePool(true)}
@@ -216,7 +244,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'orders' && (
+        {activeTab === 'orders' && currentPersona && (
           <EscrowTimelineView 
             currentPersona={currentPersona}
             onOpenDispute={(ord) => setDisputeOrder(ord)}
@@ -224,7 +252,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'admin' && (
+        {activeTab === 'admin' && currentPersona && (
           <AdminCenterView 
             currentPersona={currentPersona}
             showToast={showToast}
@@ -290,11 +318,7 @@ export default function App() {
         <AuthModal 
           initialTab={typeof showAuth === 'string' ? showAuth : 'signin'}
           onClose={() => setShowAuth(false)}
-          onSuccess={(newUser) => {
-            fetchUsersList().then(() => {
-              handlePersonaChange(newUser.id);
-            });
-          }}
+          onSuccess={handleLoginSuccess}
           showToast={showToast}
         />
       )}

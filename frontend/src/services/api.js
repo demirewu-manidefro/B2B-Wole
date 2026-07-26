@@ -1,24 +1,61 @@
-// Client API Service for REST Communication with Express Backend (Section 1-7)
+// Client API Service for REST Communication with Express Backend
+// Auth: JWT Bearer token stored in localStorage, sent on every authenticated request.
 
 const API_BASE = '/api';
+const TOKEN_KEY = 'b2bwole_token';
+const USER_KEY  = 'b2bwole_user';
 
 class ApiService {
   constructor() {
-    this.currentUserId = 1; // Default: Abebe Kebede (Buyer)
+    this.token = localStorage.getItem(TOKEN_KEY) || null;
+    this.currentUserId = null; // resolved from token
   }
 
-  setUserId(id) {
-    this.currentUserId = id;
-    console.log(`[Persona Switched] Active User ID set to ${id}`);
+  // ── Token & Session Management ──────────────────────────────────────────────
+
+  /** Save JWT + user object after login/register */
+  saveSession(token, user) {
+    this.token = token;
+    this.currentUserId = user.id;
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
+
+  /** Clear session on sign-out */
+  clearSession() {
+    this.token = null;
+    this.currentUserId = null;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  /** Return cached user object (may be stale — verify with getMe if needed) */
+  getCachedUser() {
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+
+  /** True if a token exists in storage */
+  hasSession() {
+    return !!this.token;
+  }
+
+  // ── Header Builder ──────────────────────────────────────────────────────────
 
   getHeaders(customHeaders = {}) {
-    return {
-      'Content-Type': 'application/json',
-      'x-user-id': this.currentUserId,
-      ...customHeaders,
-    };
+    const headers = { 'Content-Type': 'application/json', ...customHeaders };
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    // Fallback x-user-id for routes that still rely on it (catalog reads, etc.)
+    if (this.currentUserId) {
+      headers['x-user-id'] = this.currentUserId;
+    }
+    return headers;
   }
+
+  // ── Core Request ────────────────────────────────────────────────────────────
 
   async request(endpoint, options = {}) {
     try {
@@ -35,6 +72,11 @@ class ApiService {
         throw err;
       }
 
+      // Token expired or revoked — clear session
+      if (response.status === 401) {
+        this.clearSession();
+      }
+
       const data = await response.json();
       if (!response.ok) {
         const err = new Error(data.error || data.message || `HTTP ${response.status}`);
@@ -49,7 +91,39 @@ class ApiService {
     }
   }
 
-  // --- Catalog Endpoints ---
+  // ── Auth Endpoints ──────────────────────────────────────────────────────────
+
+  /** POST /api/auth/login — returns { user, token } */
+  async loginUser(credentials) {
+    const res = await this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+    if (res.token && res.user) {
+      this.saveSession(res.token, res.user);
+    }
+    return res;
+  }
+
+  /** POST /api/users — register new user, returns { user, token } */
+  async registerUser(userData) {
+    const res = await this.request('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    if (res.token && res.user) {
+      this.saveSession(res.token, res.user);
+    }
+    return res;
+  }
+
+  /** GET /api/auth/me — validate token & get fresh user profile */
+  getMe() {
+    return this.request('/auth/me');
+  }
+
+  // ── Catalog Endpoints ───────────────────────────────────────────────────────
+
   getProducts(category = null) {
     const query = category ? `?category_slug=${encodeURIComponent(category)}` : '';
     return this.request(`/products${query}`);
@@ -66,7 +140,8 @@ class ApiService {
     });
   }
 
-  // --- Orders & Escrow Endpoints (Section 3 & 5.1) ---
+  // ── Orders & Escrow ─────────────────────────────────────────────────────────
+
   getOrders() {
     return this.request('/orders');
   }
@@ -85,7 +160,8 @@ class ApiService {
     });
   }
 
-  // --- RFQ Negotiations (Section 2.2) ---
+  // ── RFQ Negotiations ────────────────────────────────────────────────────────
+
   getRfqNegotiations() {
     return this.request('/rfq');
   }
@@ -104,7 +180,8 @@ class ApiService {
     });
   }
 
-  // --- Freight Consolidation Pools (Section 2.4) ---
+  // ── Freight Pools ───────────────────────────────────────────────────────────
+
   getFreightPools() {
     return this.request('/freight/pools');
   }
@@ -123,7 +200,8 @@ class ApiService {
     });
   }
 
-  // --- Security & Webhooks (Section 5.2, 5.5) ---
+  // ── Admin & System ──────────────────────────────────────────────────────────
+
   simulateWebhook(webhookData) {
     return fetch(`${API_BASE}/webhooks/chapa`, {
       method: 'POST',
@@ -156,20 +234,6 @@ class ApiService {
     }));
   }
 
-  registerUser(userData) {
-    return this.request('/users', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-  }
-
-  loginUser(credentials) {
-    return this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-  }
-
   getAdminStats() {
     return this.request('/admin/stats');
   }
@@ -179,6 +243,15 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(categoryData),
     });
+  }
+
+  getUsers() {
+    return this.request('/users');
+  }
+
+  // Legacy — kept for compatibility
+  setUserId(id) {
+    this.currentUserId = id;
   }
 }
 
