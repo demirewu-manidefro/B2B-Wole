@@ -25,6 +25,7 @@ export default function App() {
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [cartCount, setCartCount] = useState(0);
+  const [activeCategory, setActiveCategory] = useState('Appliances');
 
   // Modals state
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -100,6 +101,16 @@ export default function App() {
       showToast(`❌ JSONB Query Error: ${err.message}`, 'danger');
     } finally {
       setLoadingProducts(false);
+    }
+  };
+
+  const handleSelectCategory = (catLabel, slug) => {
+    setActiveCategory(catLabel);
+    if (slug) {
+      fetchProducts(slug);
+    } else {
+      showToast(`⚡ Filtering catalog by "${catLabel}" (Showing available wholesale SKUs)...`, 'success');
+      fetchProducts(null);
     }
   };
 
@@ -182,7 +193,11 @@ export default function App() {
       <main>
         {activeTab === 'catalog' && (
           <div className="container">
-            <HeroBanner onExplore={() => window.scrollTo({ top: 500, behavior: 'smooth' })} />
+            <HeroBanner 
+              onExplore={() => window.scrollTo({ top: 500, behavior: 'smooth' })} 
+              activeCategory={activeCategory}
+              onSelectCategory={handleSelectCategory}
+            />
 
             <div className="flex items-center justify-between mb-6 border-b border-border-glass pb-4">
               <div>

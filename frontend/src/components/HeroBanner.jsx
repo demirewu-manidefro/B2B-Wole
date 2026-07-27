@@ -1,10 +1,19 @@
 import React from 'react';
 import { ShieldCheck, Zap, Lock, Award, RefreshCw, Truck } from 'lucide-react';
+import CategorySidebar from './CategorySidebar';
 
-export default function HeroBanner({ onExplore }) {
+export default function HeroBanner({ onExplore, activeCategory, onSelectCategory }) {
   return (
     <div className="ali-hero-banner">
-      {/* Main Promo Card — AliExpress blue banner style */}
+      {/* Left Column: AliExpress Category Menu Sidebar */}
+      <div className="hero-sidebar-wrapper">
+        <CategorySidebar 
+          activeCategory={activeCategory}
+          onSelectCategory={onSelectCategory}
+        />
+      </div>
+
+      {/* Center Column: Main Promo Card — AliExpress blue banner style */}
       <div className="hero-promo-card">
         {/* Blue gradient background accent */}
         <div className="hero-promo-bg" />
@@ -56,7 +65,7 @@ export default function HeroBanner({ onExplore }) {
         </div>
       </div>
 
-      {/* Right Side Stats Panel */}
+      {/* Right Column: Stats Panel */}
       <div className="hero-stats-panel">
         <div className="stat-card-ali">
           <div className="stat-icon-wrapper">
@@ -95,6 +104,26 @@ export default function HeroBanner({ onExplore }) {
           <div>
             <div className="stat-val-ali">4 Domains</div>
             <div className="stat-label-ali">Unified in Single Relational Schema</div>
+          </div>
+        </div>
+
+        <div className="stat-card-ali">
+          <div className="stat-icon-wrapper">
+            <Truck size={24} style={{ color: '#2563eb' }} />
+          </div>
+          <div>
+            <div className="stat-val-ali">24-48h</div>
+            <div className="stat-label-ali">Isuzu Freight Pool Dispatch</div>
+          </div>
+        </div>
+
+        <div className="stat-card-ali">
+          <div className="stat-icon-wrapper">
+            <Zap size={24} style={{ color: '#f59e0b' }} />
+          </div>
+          <div>
+            <div className="stat-val-ali">Instant</div>
+            <div className="stat-label-ali">Chapa & Telebirr Settlement</div>
           </div>
         </div>
       </div>

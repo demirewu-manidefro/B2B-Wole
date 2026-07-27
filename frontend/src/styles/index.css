@@ -954,24 +954,152 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -0.02em; color: var(-
 }
 
 /* ══════════════════════════════════════════════════
-   HERO BANNER  (AliExpress-style blue promo)
+   HERO BANNER & CATEGORY SIDEBAR
 ══════════════════════════════════════════════════ */
 .ali-hero-banner {
   display: grid;
-  grid-template-columns: 2.5fr 1fr;
+  grid-template-columns: 250px 1fr 290px;
   gap: 1.25rem;
-  margin-bottom: 2rem;
+  margin-bottom: 2.25rem;
+  align-items: stretch;
 }
+
+@media (max-width: 1200px) {
+  .ali-hero-banner {
+    grid-template-columns: 240px 1fr;
+  }
+  .hero-stats-panel {
+    grid-column: span 2;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .ali-hero-banner {
+    grid-template-columns: 1fr;
+  }
+  .hero-sidebar-wrapper {
+    display: none;
+  }
+  .hero-stats-panel {
+    grid-column: span 1;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ── Left Category Sidebar (AliExpress exact match) ── */
+.hero-sidebar-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ali-category-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+  height: 100%;
+}
+.sidebar-all-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #f3f4f6;
+  color: #111827;
+  font-family: var(--font-main);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.7rem 1.15rem;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  text-align: left;
+}
+.sidebar-all-pill:hover, .sidebar-all-pill.active {
+  background: #e5e7eb;
+  border-color: #d1d5db;
+  color: #000000;
+}
+.sidebar-all-icon {
+  color: #1f2937;
+  flex-shrink: 0;
+}
+.sidebar-list-container {
+  background: #f4f5f7;
+  border-radius: 16px;
+  padding: 0.6rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.15rem;
+  border: 1px solid #e8eaf0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  flex: 1;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  color: #374151;
+  font-family: var(--font-main);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+  text-align: left;
+  background: transparent;
+  width: 100%;
+}
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.75);
+  color: #111827;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.sidebar-item.active {
+  background: #ffffff;
+  color: #000000;
+  font-weight: 700;
+  border-color: #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+.sidebar-item-icon {
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+.sidebar-item:hover .sidebar-item-icon,
+.sidebar-item.active .sidebar-item-icon {
+  color: #000000;
+}
+.sidebar-item-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Center Promo Banner ── */
 .hero-promo-card {
   background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #2563eb 70%, #3b82f6 100%);
   border-radius: 16px;
-  padding: 2.5rem 2.75rem;
+  padding: 2.25rem 2.5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  min-height: 260px;
+  min-height: 480px;
+  height: 100%;
   box-shadow: 0 8px 30px rgba(37, 99, 235, 0.35);
 }
 /* decorative circles inside banner */
@@ -1032,7 +1160,9 @@ h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -0.02em; color: var(-
 .hero-stats-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  justify-content: space-between;
+  gap: 0.65rem;
+  height: 100%;
 }
 .stat-card-ali {
   background: #ffffff;
